@@ -229,6 +229,12 @@ class ESForeignDataWrapper(ForeignDataWrapper):
         # `fields` 1.16 times better than `_source`.
         query['fields'] = [self._column_to_es_field(
             column) for column in columns]
+
+        # If there aren't any columns sent ie in the case of a count query we need to
+        # select something from elastic so just select the document id
+        if not columns:
+            query['fields'] = ["_id"]
+
         # When using fields, the values always come back in an array, to make for
         # more consistent treatment of any actual array fields that we may have
         # requested. If the field is not truly an array field, the value comes back
@@ -242,20 +248,25 @@ class ESForeignDataWrapper(ForeignDataWrapper):
                 doc_type=self._doc_type,
                 size=self._SCROLL_SIZE,
                 scroll=self._SCROLL_LENGTH):
-            obs = result['fields']
+            # Special case where no columns were specified. _id isn't added to
+            # columns due to the potential column name conversion which can happen
+            if not columns:
+                row = { '_id': result['_id'] }
+            else:
+                obs = result['fields']
 
-            def _massage_value(value, column):
-                # If the column type is an array, return the list.
-                # Otherwise, return the first element of the array.
-                if self._columns[column].type_name.endswith('[]'):
-                    return value
-                return value[0]
-            row = {
-                column: _massage_value(
-                    obs.get(
-                        self._column_to_es_field(column),
-                        default_value),
-                    column) for column in columns}
+                def _massage_value(value, column):
+                    # If the column type is an array, return the list.
+                    # Otherwise, return the first element of the array.
+                    if self._columns[column].type_name.endswith('[]'):
+                        return value
+                    return value[0]
+                row = {
+                    column: _massage_value(
+                        obs.get(
+                            self._column_to_es_field(column),
+                            default_value),
+                        column) for column in columns}
             yield row
 
     def get_rel_size(self, quals, columns):
