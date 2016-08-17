@@ -68,8 +68,10 @@ class ESForeignDataWrapper(ForeignDataWrapper):
 
         The default implementation replaces `__` with `.` (allowing for specifying
         fields in nested objects) and `_` with `-` (to reflect common ElasticSearch
-        convention). Also, `timestamp` is converted to `@timestamp` to match
-        Logstash conventions.
+        convention).
+
+        `_id` is left untranslated.
+        `timestamp` is converted to `@timestamp` to match Logstash conventions.
 
         This method is used only for foreign tables that were created with the option
         `column_name_translation` set to the value `true`.
@@ -77,7 +79,9 @@ class ESForeignDataWrapper(ForeignDataWrapper):
         This method can be overridden in a subclass if a different implementation
         is desired.
         """
-        if column == 'timestamp':
+        if column == '_id':
+            return column
+        elif column == 'timestamp':
             return '@timestamp'
         return column.replace('__', '.').replace('_', '-')
 
@@ -242,9 +246,13 @@ class ESForeignDataWrapper(ForeignDataWrapper):
                 doc_type=self._doc_type,
                 size=self._SCROLL_SIZE,
                 scroll=self._SCROLL_LENGTH):
-            obs = result['fields']
+            obs = result.get('fields', {})
 
             def _massage_value(value, column):
+                if column == '_id':
+                    # `_id` is special in that it's always present in the top-level
+                    # result, not under `fields`.
+                    return result['_id']
                 # If the column type is an array, return the list.
                 # Otherwise, return the first element of the array.
                 if self._columns[column].type_name.endswith('[]'):

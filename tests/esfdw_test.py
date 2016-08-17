@@ -445,6 +445,51 @@ class TestESIntegrationPoints(unittest.TestCase):
         expected_rows = [{'object__nested_field': 'value'}]
         self.assertEqual(rows, expected_rows)
 
+    @patch('esfdw.esfdw.scan')
+    def test_id(
+            self, scan_mock, _elasticsearch_mock):
+        columns = {
+            '_id': ColumnDefinition(
+                '_id',
+                type_name='text')}
+        fdw = ESForeignDataWrapper({'doc_type': 'foo_doc',
+                                    'index': 'our_index',
+                                    'column_name_translation': 'true'},
+                                   columns)
+        quals = [Qual('_id', '=', 'value')]
+        scan_mock.return_value = [
+            {'_id': 'value'}]
+        rows = list(fdw.execute(quals, ['_id']))
+
+        expected_query = {
+            'fields': ['_id'],
+            'query': {
+                'filtered': {
+                    'filter': {
+                        'bool': {
+                            'must': [
+                                {
+                                    'term': {
+                                        '_id': 'value'
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+        scan_mock.assert_called_once_with(
+            fdw.esclient,
+            query=expected_query,
+            index='our_index',
+            doc_type='foo_doc',
+            size=fdw._SCROLL_SIZE,
+            scroll=fdw._SCROLL_LENGTH)
+
+        expected_rows = [{'_id': 'value'}]
+        self.assertEqual(rows, expected_rows)
+
 
 if __name__ == '__main__':
     unittest.main()
