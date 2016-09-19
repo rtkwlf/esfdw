@@ -47,7 +47,7 @@ While any valid PostgreSQL query can be run, only [some operators](#pushed_opera
 
   * [Install Multicorn](http://multicorn.org/#idid3).
   * Install the `elasticsearch` pip. **Please ensure that you install a version that's [appropriate for your version of Elasticsearch](http://elasticsearch-py.readthedocs.org/en/master/#compatibility).**
-  * `pip setup.py install` to install esfdw directly from the git repository.
+  * `python setup.py install` to install esfdw directly from the git repository.
 
 ## Usage
 
