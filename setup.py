@@ -23,12 +23,12 @@ setup(
     name='esfdw',
     description='PostgreSQL foreign data wrapper for Elasticsearch',
     long_description=long_description,
-    version='0.1.0',
+    version='0.1.1',
     author='Arctic Wolf Networks, Inc.',
     author_email='info@arcticwolf.com',
     license='MIT',
     packages=['esfdw'],
     test_suite='tests',
     url='https://github.com/rtkwlf/esfdw',
-    download_url='https://github.com/rtkwlf/esfdw/tarball/0.1.0'
+    download_url='https://github.com/rtkwlf/esfdw/tarball/0.1.1'
 )
